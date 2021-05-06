@@ -30,11 +30,13 @@ function operate(operator, x, y) {
         case "+":
             return add(x,y)
         case "−":
+        case "-":
             return subtract(x,y)
         case "×":
         case "*":
             return multiply(x,y)
         case "÷":
+        case "/":
             return divide(x,y)
         default:
             return "3RR0R"
@@ -49,6 +51,16 @@ function reset() {
     result = null
 }
 
+function clear() {
+    b = null
+    op = null
+    newop = null
+    result = 0
+    populate(result)
+    a = null
+    periodButton.disabled = false;
+}
+
 function setDigits(old, newNum) {
     if (old === null) { return newNum}
     return old + newNum
@@ -57,10 +69,12 @@ function setDigits(old, newNum) {
 function setOp(key) {
     if (op === null) {
         op = key
+        populate(`${a} ${op}`)
     } else {
         newop = key
         result = operate(op,a,b)
-        populate(result)
+        reset()
+        populate(`${a} ${op}`)
     }
 }
 
@@ -82,14 +96,35 @@ function populate(x) {
         display.innerHTML = result.join(' ')
 }
 
+function del() {
+    let x = document.getElementById('display').innerHTML.split(" ")
+    if (x[x.length - 1] > 1) {
+        if (x[x.length-1].slice(-1) === ".") { periodButton.disabled = false;}
+        x[x.length - 1] = x[x.length - 1].slice(0,-1)
+        populate(x.join(' '))
+        a = x[0] || null
+        op = x[1] || null
+        b = x[2] || null
+    } else {
+        x.pop()
+        a = x[0] || null
+        op = x[1] || null
+        b = x[2] || null
+        if (a == null) {
+            populate('0')
+        } else {
+            populate(x.join(' '))
+        }
+    }
+}
+
 const buttons = document.getElementById('buttons');
+const periodButton = document.getElementById('period');
 
 buttons.addEventListener('click', (event) => {
-    const periodButton = document.getElementById('period');
-    console.log(periodButton)
     const isButton = event.target.classList.contains('btn');
     if (!isButton) {
-        return;
+        return; // If not a button, end function.
     }
     if (event.target.innerHTML === '.') {
         periodButton.disabled = true;
@@ -108,15 +143,7 @@ buttons.addEventListener('click', (event) => {
             a = null
             return
         }
-        if(op === null) {
-            op = `${event.target.innerHTML}`
-            populate(`${a} ${op}`)
-        } else {
-            newop = `${event.target.innerHTML}`
-            result = operate(op,a,b)
-            reset()
-            populate(`${a} ${op}`)
-        }
+        setOp(`${event.target.innerHTML}`);
         if (b !== null) {
             result = operate(op,Number(a),Number(b))
             populate(result)
@@ -124,46 +151,20 @@ buttons.addEventListener('click', (event) => {
         }
     } else if (event.target.classList.contains('bigBtn')) {
         if (event.target.innerHTML === 'CLEAR') { 
-            b = null
-            op = null
-            newop = null
-            result = 0
-            populate(result)
-            a = null
+            clear()
         }
         if (event.target.innerHTML === 'DELETE') {
-            let x = document.getElementById('display').innerHTML.split(" ")
-            if (x[x.length - 1] > 1) {
-                x[x.length - 1] = x[x.length - 1].slice(0,-1)
-                populate(x.join(' '))
-                a = x[0] || null
-                op = x[1] || null
-                b = x[2] || null
-            } else {
-                x.pop()
-                a = x[0] || null
-                op = x[1] || null
-                b = x[2] || null
-                if (a == null) {
-                    populate('0')
-                } else {
-                    populate(x.join(' '))
-                }
-            }
+            del()
         }
     } else {
-        if (a === null || a === undefined) {
-            a = event.target.innerHTML;
+        if (op === null || op === undefined) {
+            a = setDigits(a,event.target.innerHTML);
             populate(a)
-        } else if (op === null || op === undefined) {
-            a += event.target.innerHTML;
-            populate(a)
-        } else if (b === null || b === undefined) {
-            b = event.target.innerHTML;
-            populate(`${a} ${op} ${b}`)
+            return
         } else {
-            b += event.target.innerHTML;
-            populate(`${a} ${op} ${b}`)
+            b = setDigits(b,event.target.innerHTML);
+            populate(`${a} ${op} ${b}`);
+            return
         }
     }
 })
@@ -194,12 +195,23 @@ window.addEventListener('keydown', function(e) {
         case '+':
         case '-':
             setOp(e.key)
+            if (newop !== null) {
+                reset()
+            }
             break
         case '=':
-            console.log('equals')
+        case 'Enter':
+            result = operate(op,a,b)
+            populate(result)
+            reset()
+            return
         case 'Backspace':
-            console.log('bs')
+            del()
+            return
+        case 'c':
+            clear()
+            return
         default:
-            console.log(e.key)
+            return
     }   
 })
